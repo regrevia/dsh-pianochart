@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.2
+
+- Peer range for `@deepseek-ai/dsh-mcp-client` covers both prerelease lines
+  (`>=0.1.0-rc.1 <0.2.0-0 || >=0.2.0-rc.1 <0.3.0-0`), so installing on a 0.1
+  harness build no longer resolves to nothing.
+
+## 0.1.1
+
+- `@deepseek-ai/dsh-mcp-client` moved from `dependencies` to `peerDependencies`:
+  the host owns the client, the bundle must not pin a second copy.
+- Icon redrawn: one note on a faint staff, replacing the previous mark that
+  read as a grid at small sizes.
+
 ## 0.1.0
 
 First release.
