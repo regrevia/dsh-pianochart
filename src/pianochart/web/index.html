@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>链接换谱 · pianochart</title>
+<meta name="description" content="给一个音频或视频链接，得到五线谱、简谱、MusicXML 和 MIDI。">
+<style>
+/* design-override: 单页工具，不套 KPI/左栏骨架；token 沿用 frontend-design-spec 第二节 */
+:root{
+  --canvas:#F5F6FA; --surface:#FFFFFF; --border:#E4E7F0;
+  --ink:#1B1B22; --ink-muted:#6C6F7E; --ink-subtle:#5A5D6B;
+  --accent-ink:#6355D8; --accent-soft:#E8E4FB;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--ink);
+  font:16px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}
+main{max-width:760px;margin:0 auto;padding:64px 24px 96px}
+h1{font-size:28px;line-height:1.6;margin:0 0 8px;font-weight:600}
+p.sub{margin:0 0 32px;font-size:16px;color:#6C6F7E}
+form{display:flex;gap:8px;flex-wrap:wrap}
+input[type=url]{flex:1 1 320px;min-width:0;padding:12px 14px;font:16px/1.75 inherit;
+  background:var(--surface);color:var(--ink);border:1px solid #E4E7F0;border-radius:10px}
+select,button{padding:12px 16px;font:16px/1.75 inherit;color:var(--ink);
+  background:var(--surface);border:1px solid #E4E7F0;border-radius:10px}
+button{background:#E8E4FB;color:#6355D8;border:1px solid #6355D8;cursor:pointer}
+button[disabled]{opacity:.45;cursor:default}
+#state{margin-top:24px;min-height:28px;font-size:16px;color:#6C6F7E}
+.card{margin-top:16px;padding:16px 20px;background:var(--surface);
+  border:1px solid #E4E7F0;border-radius:14px}
+.card h3{margin:0 0 8px;font-size:14px;font-weight:600;color:#5A5D6B}
+.card a{display:block;padding:2px 0;font-size:16px;color:#6355D8;text-decoration:none}
+.card a:hover{text-decoration:underline}
+pre{margin:0;overflow:auto;font:13px/1.75 ui-monospace,SFMono-Regular,Menlo,monospace;color:#1B1B22}
+.err{background:#FFF5F5;border:1px solid #E9BDBD}
+.err h3{color:#8A2B2B}
+.err pre{color:#8A2B2B}
+@media (prefers-reduced-motion:no-preference){.card{transition:border-color .18s}}
+</style>
+</head>
+<body>
+<main>
+<h1>一个链接，一份能弹的钢琴谱</h1>
+<p class="sub">人声去掉，伴奏收进左手；五线谱与简谱同时出。</p>
+<form id="f">
+  <input id="src" type="url" required placeholder="音频或视频链接">
+  <select id="tier" aria-label="难度档位">
+    <option value="easy">easy（升号最少，好弹）</option>
+    <option value="all">三档全出</option>
+    <option value="medium">medium</option>
+    <option value="hard">hard</option>
+  </select>
+  <button id="go">出谱</button>
+</form>
+<div id="state" role="status" aria-live="polite"></div>
+<div id="out"></div>
+</main>
+<script>
+/* The page and the worker live on different hosts once this is published, so the
+   endpoint is a knob: ?api=https://… . With no knob it talks to whoever served it. */
+const API = new URLSearchParams(location.search).get('api') || '';
+const f = document.getElementById('f'), go = document.getElementById('go'),
+      src = document.getElementById('src'), tier = document.getElementById('tier'),
+      state = document.getElementById('state'), out = document.getElementById('out');
+const STAGES = ['排队中', '取音频', '分离并转写', '出谱'];
+const esc = s => String(s).replace(/[<&]/g, c => c === '<' ? '&lt;' : '&amp;');
+
+function draw(j) {
+  if (j.status === 'error') {
+    state.textContent = '这次没成';
+    out.innerHTML = `<div class="card err"><h3>原因</h3><pre>${esc(j.error)}</pre></div>`;
+    go.disabled = false;
+    return;
+  }
+  const files = j.files || [];
+  if (j.status !== 'ready') { state.textContent = STAGES[j.stage || 0]; return; }
+
+  go.disabled = false;
+  const link = (f, attrs) => `<a href="${API}/files/${j.id}/${f.path}" ${attrs}>${esc(f.name)}</a>`;
+  const staff = files.filter(f => /\.png$/.test(f.name) && !/-roll\.png$/.test(f.name));
+  const roll  = files.find(f => /-roll\.png$/.test(f.name));
+  const rest  = files.filter(f => /\.(musicxml|mid|jianpu\.txt)$/.test(f.name));
+  const sheets = staff.length ? `共 ${staff.length} 页` : '';
+
+  state.textContent = `好了，${sheets}`;
+  let h = '';
+  if (j.jianpu) h += `<div class="card"><h3>简谱</h3><pre>${esc(j.jianpu)}</pre></div>`;
+  if (staff.length) h += `<div class="card"><h3>五线谱</h3>` +
+    staff.map(f => link(f, 'target="_blank" rel="noopener"')).join('') + `</div>`;
+  const dl = [...rest, ...(roll ? [roll] : [])];
+  if (dl.length) h += `<div class="card"><h3>下载</h3>` +
+    dl.map(f => link(f, 'download')).join('') + `</div>`;
+  out.innerHTML = h;
+}
+
+async function poll(id) {
+  const j = await (await fetch(`${API}/api/job/${id}`)).json();
+  draw(j);
+  if (j.status === 'ready' || j.status === 'error') return;
+  setTimeout(() => poll(id), 1500);
+}
+
+f.addEventListener('submit', async e => {
+  e.preventDefault();
+  go.disabled = true; out.innerHTML = ''; state.textContent = '排队中';
+  try {
+    const r = await fetch(`${API}/api/score`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ source: src.value.trim(), tier: tier.value }),
+    });
+    const j = await r.json();
+    if (j.error) { state.textContent = j.error; go.disabled = false; return; }
+    poll(j.id);
+  } catch (err) {
+    state.textContent = '连不上出谱服务';
+    go.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
