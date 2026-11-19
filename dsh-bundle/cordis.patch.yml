@@ -1,0 +1,49 @@
+# Two entries: the Host tool (index.js through ctx.tools) and an MCP client
+# pointing at the stdio server in lib/pianochart_mcp.py. They share one
+# pipeline; the tool is the convenient path, the MCP server is what any other
+# MCP client can attach to.
+#
+# No absolute path is baked in. The launcher below finds the pianochart
+# checkout (the directory holding src/pianochart/cli.py) by trying, in order:
+# PIANOCHART_REPO, $HOME/piano-rescue, $HOME/piano, then walking up from the
+# working directory. PIANOCHART_PYTHON / PIANOCHART_MCP override the two
+# files. A checkout anywhere else only needs PIANOCHART_REPO set.
+- insert:
+    - id: pianochart
+      name: pianochart-dsh
+    - id: pianochart-mcp
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: pianochart
+        transport: stdio
+        # A score needs minutes of CPU; the client default of 60 s would cut
+        # every real run off mid-pipeline. Match the Host tool's budget.
+        toolCallTimeoutMs: 1800000
+        command: /bin/sh
+        args:
+          - -c
+          - |
+            PIANOCHART_REPO=${PIANOCHART_REPO:-}
+            PIANOCHART_MCP=${PIANOCHART_MCP:-}
+            PIANOCHART_PYTHON=${PIANOCHART_PYTHON:-}
+            repo=
+            for c in "$PIANOCHART_REPO" "$HOME/piano-rescue" "$HOME/piano" "$PWD"; do
+              d=${c:-$PWD}
+              while :; do
+                if [ -f "$d/src/pianochart/cli.py" ]; then repo=$d; break 2; fi
+                p=$(dirname "$d")
+                [ "$p" = "$d" ] && break
+                d=$p
+              done
+            done
+            if [ -z "$repo" ]; then
+              echo "pianochart: no checkout found; set PIANOCHART_REPO to the directory containing src/pianochart/cli.py" >&2
+              exit 1
+            fi
+            mcp=$PIANOCHART_MCP
+            [ -n "$mcp" ] || mcp=$repo/dsh-bundle/lib/pianochart_mcp.py
+            py=$PIANOCHART_PYTHON
+            [ -n "$py" ] || { [ -x "$repo/.venv/bin/python" ] && py=$repo/.venv/bin/python; }
+            [ -n "$py" ] || py=$(command -v python3)
+            exec "$py" "$mcp"
+        failOnStartupError: false

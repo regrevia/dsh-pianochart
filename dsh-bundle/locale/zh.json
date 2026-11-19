@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "钢琴谱",
+    "description": "给一个音频链接，输出钢琴谱：五线谱、简谱、MusicXML 与 MIDI，只扒背景音乐。"
+  }
+}

@@ -1,0 +1,17 @@
+# core
+numpy>=1.26
+scipy>=1.13
+soundfile>=0.12
+librosa>=0.10
+PyYAML>=6
+# separation / transcription
+torch>=2.2
+torchaudio>=2.2
+demucs>=4.0
+# notation
+music21>=9.1
+verovio>=3.15
+cairosvg>=2.7        # needs the cairo library (brew install cairo on macOS)
+# plotting / io
+matplotlib>=3.8
+yt-dlp>=2024.1       # optional, only to fetch audio you are allowed to use

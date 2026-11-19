@@ -1,0 +1,62 @@
+{
+  "name": "pianochart-dsh",
+  "version": "0.1.0",
+  "description": "Turn one audio link into a piano score: five-line staff, numbered notation, MusicXML and MIDI, written to be playable.",
+  "type": "module",
+  "license": "MIT",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.png"
+  },
+  "files": [
+    "index.js",
+    "lib",
+    "skill",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.png",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "cordis",
+    "mcp",
+    "piano",
+    "sheet-music",
+    "music21",
+    "transcription"
+  ],
+  "engines": {
+    "node": ">=20",
+    "dsh": ">=0.1.5"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-mcp-client": "0.2.2-rc.2"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/regrevia/dsh-pianochart.git"
+  },
+  "homepage": "https://github.com/regrevia/dsh-pianochart#readme",
+  "bugs": {
+    "url": "https://github.com/regrevia/dsh-pianochart/issues"
+  },
+  "author": {
+    "name": "regrevia",
+    "url": "https://github.com/regrevia"
+  }
+}

@@ -1,0 +1,63 @@
+# 三档只允许两处不同：调号复杂度，以及由调号决定的黑键数量。
+# 音符、节奏、密度、音域、连奏规则都是同一份（下面的 _skeleton），
+# 所以同一首曲子在三档里是同一张谱，只是写在不同的调上。
+_skeleton: &skeleton
+  right_hand:
+    range:
+      - 60
+      - 79
+    max_simultaneous: 2
+    min_note: 0.18
+    max_leap: 7
+    legato: true
+    max_gap: 0.24
+    harmony_notes: 1
+    harmony_min_note_dur: 0.7
+  left_hand:
+    range:
+      - 40
+      - 57
+    voices:
+      - 0
+      - 7
+    # 左手上限有三道闸门，都生效，不是重复配置：
+    #   这里 3 = 中间闸门（_thin_overlaps，arrange.py:1180），只管 _build_left_hand
+    #              产出的骨架，prefer_high=False 时超限丢弃新到的音、不动已保留音。
+    #   代码 MAX_KEYS_LEFT = 6 = 收尾闸门（_thin_chords，arrange.py:1211），跑在
+    #              补音/锚根/吸附之后，因为那四个阶段会再加音；6 是"手张得开"的
+    #              物理上限，不是可弹性判据。
+    #   这里 3 也同时是最终闸门 `_cap_strikes`（arrange.py:_cap_strikes）的键数上限，
+    #              它跑在最后，按**音高类**取舍：保低音根、优先保不同音高类，
+    #              只丢八度重复。配 SPAN_CAP = 12，一次触键跨度不超过八度。
+    # 实测为什么不是 2：压到 2 会丢掉 511 个左手音、chroma 从 0.7291 掉到 0.6921
+    # （同一份音频同一档），而那 511 个音里大量是和弦音而非重复音。压到 3 且限跨度
+    # 八度，只丢 ~60 个音、chroma 0.7291，换来每只手最多 3 键、跨度不超八度。
+    # 三档共享这一段，所以它是同一件乐器，不是档位旋钮。
+    max_simultaneous: 3
+    # 每小节的**事件预算**（左手下键次数），不是"一槽几个音"。
+    # `_build_left_hand` 用它选网格与 extra 音程集（4 → 八分音符网格 + [3,4,7]），
+    # `_cover_missing_tones` 用它推单次补音的 max_notes = 3 if budget <= 7 else 4。
+    # 别和 `_build_left_hand` 里的局部变量 max_notes 混为一谈：后者在 easy/medium 是 3、
+    # hard 是 4，由档位分支决定，与这里的 4 不是同一个量。
+    events_per_bar: 4
+
+easy:
+  <<: *skeleton
+  label: 简单
+  global:
+    target_key: Am
+    allowed_black_keys: 1
+
+medium:
+  <<: *skeleton
+  label: 中等
+  global:
+    target_key: Cm
+    allowed_black_keys: 3
+
+hard:
+  <<: *skeleton
+  label: 困难
+  global:
+    target_key: Fm
+    allowed_black_keys: 5

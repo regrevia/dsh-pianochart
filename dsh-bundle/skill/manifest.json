@@ -1,0 +1,5 @@
+{
+  "name": "pianochart",
+  "description": "Turn one audio link into a playable piano score with piano_score: which tier to pick (easy is the one to play), previewing long audio with seconds, handing a page link over to Envoy when the tool reports it is not an audio file, and how to read the similarity figures without overselling them.",
+  "version": "0.1.0"
+}

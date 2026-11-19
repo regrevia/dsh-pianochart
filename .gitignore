@@ -1,0 +1,13 @@
+# Working data, not source.
+cache/
+work/
+out/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# The separation weights are downloaded, not committed (84 MB).
+models/
+
+.backup/
