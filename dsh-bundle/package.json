@@ -1,6 +1,6 @@
 {
   "name": "pianochart-dsh",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Turn one audio link into a piano score: five-line staff, numbered notation, MusicXML and MIDI, written to be playable.",
   "type": "module",
   "license": "MIT",
@@ -40,9 +40,6 @@
       "patch": "./cordis.patch.yml"
     }
   },
-  "dependencies": {
-    "@deepseek-ai/dsh-mcp-client": "0.2.2-rc.2"
-  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
@@ -58,5 +55,8 @@
   "author": {
     "name": "regrevia",
     "url": "https://github.com/regrevia"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-mcp-client": "0.2.2-rc.2"
   }
 }
