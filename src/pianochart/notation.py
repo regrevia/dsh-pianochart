@@ -76,6 +76,40 @@ def _clean_pieces(ql: float, off: float = 0.0, bar: float = 4.0) -> list[float]:
     return pieces or [ql]
 
 
+def _attach_finger(note_obj, finger: int) -> None:
+    """Print a finger number above/next to one note, if this note has one.
+
+    music21's ``Fingering`` is the standard representation and Verovio renders
+    it as a small digit; nothing about the pitch, duration or beaming changes.
+    """
+    if not finger or not 1 <= int(finger) <= 5:
+        return
+    from music21 import articulations
+
+    fi = articulations.Fingering(int(finger))
+    fi.placement = "above"
+    note_obj.articulations.append(fi)
+
+
+def _attach_fingers(note_obj, fingers: list[int]) -> None:
+    """Print one digit per chord note, in the chord's own note order.
+
+    ``music21`` writes the n-th ``Fingering`` in a Chord's ``articulations``
+    as the digit of the n-th chord note and ignores fingerings hung on the
+    members, so the whole column has to be attached at the chord level.  A
+    partly fingered chord cannot be represented -- the digits would land on
+    the wrong notes -- so it prints no digit at all.
+    """
+    if not fingers or not all(1 <= int(f) <= 5 for f in fingers):
+        return
+    from music21 import articulations
+
+    for f in fingers:
+        fi = articulations.Fingering(int(f))
+        fi.placement = "above"
+        note_obj.articulations.append(fi)
+
+
 def _insert_group(part, group: list[NoteEvent], off: float, dur: float,
                   bar: float = 4.0) -> None:
     """Insert one strike, split into tied pieces that need at most one dot."""
@@ -107,13 +141,24 @@ def _insert_group(part, group: list[NoteEvent], off: float, dur: float,
                 n.volume.velocity = int(np.clip(group[0].velocity, 20, 127))
             if tp is not None:
                 n.tie = tp
+            _attach_finger(n, group[0].finger if i == 0 else 0)
             part.insert(at, n)
         else:
             c = m21chord.Chord()
-            for pi in sorted(e.pitch for e in group):
+            for e in sorted(group, key=lambda x: x.pitch):
                 q = note.Note()
-                q.pitch.midi = pi
+                q.pitch.midi = e.pitch
                 c.add(q)
+            # music21 drops a Fingering hung on a chord *member* note and keeps
+            # only the n-th Fingering on the Chord itself as the n-th printed
+            # digit, matched to chord notes in sorted-pitch order.  Attaching to
+            # the members produced a MusicXML file with zero <fingering>.
+            _attach_fingers(
+                c,
+                [e.finger for e in sorted(group, key=lambda x: x.pitch)]
+                if i == 0
+                else [],
+            )
             c.quarterLength = piece
             if tp is not None:
                 c.tie = tp

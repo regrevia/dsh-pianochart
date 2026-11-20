@@ -65,6 +65,15 @@ TOOL = {
                     "cheaply: the separation stage costs about a tenth of the audio length."
                 ),
             },
+            "fingering": {
+                "type": "string",
+                "enum": ["key", "all", "none"],
+                "description": (
+                    "Which notes carry a fingering number. key marks only the few places "
+                    "a player has to be told how to get there (the default, and the one to "
+                    "use); all numbers every note; none leaves them out."
+                ),
+            },
             "transpose": {
                 "type": "integer",
                 "description": "Shift the whole arrangement by this many semitones.",
@@ -154,6 +163,8 @@ def run_bridge(arguments: dict) -> dict:
     ]
     if arguments.get("seconds") is not None:
         argv += ["--seconds", str(arguments["seconds"])]
+    if arguments.get("fingering"):
+        argv += ["--fingering", str(arguments["fingering"])]
     if arguments.get("transpose") is not None:
         argv += ["--transpose", str(int(arguments["transpose"]))]
 

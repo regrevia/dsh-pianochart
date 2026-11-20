@@ -200,7 +200,8 @@ def duration_of(path: str) -> float | None:
 
 
 def pipeline_command(repo: str, audio: str, tier: str, out_dir: str,
-                     seconds: float | None, transpose: int | None) -> list[str]:
+                     seconds: float | None, transpose: int | None,
+                     fingering: str | None = None) -> list[str]:
     cmd = [
         os.environ.get("PIANOCHART_PYTHON") or sys.executable,
         "-m", "pianochart.cli",
@@ -212,6 +213,8 @@ def pipeline_command(repo: str, audio: str, tier: str, out_dir: str,
         cmd += ["--seconds", str(seconds)]
     if transpose:
         cmd += ["--transpose", str(transpose)]
+    if fingering:
+        cmd += ["--fingering", str(fingering)]
     return cmd
 
 
@@ -261,6 +264,7 @@ def main() -> int:
     parser.add_argument("--tier", default="easy", choices=("easy", "medium", "hard"))
     parser.add_argument("--seconds", type=float, default=None)
     parser.add_argument("--transpose", type=int, default=None)
+    parser.add_argument("--fingering", default="key", choices=("key", "all", "none"))
     parser.add_argument("--jianpu-limit", type=int, default=4000)
     args = parser.parse_args()
 
@@ -278,7 +282,8 @@ def main() -> int:
 
         log(f"transcribing {audio} at tier {args.tier}")
         result = subprocess.run(
-            pipeline_command(args.repo, audio, args.tier, args.out, args.seconds, args.transpose),
+            pipeline_command(args.repo, audio, args.tier, args.out, args.seconds, args.transpose,
+                                args.fingering),
             cwd=args.repo,
             env={**os.environ, "PYTHONPATH": os.path.join(args.repo, "src"),
                  "PYTHONDONTWRITEBYTECODE": "1",

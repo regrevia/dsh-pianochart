@@ -57,10 +57,19 @@ PYTHONPATH=src .venv/bin/python -m pianochart.cli \
 
 Options: `--seconds N` analyse only the first N seconds; `--no-separate` skip
 separation for a fast try; `--preset easy|medium|hard|all`; `--transpose N`;
-`--out DIR`; `--cache-dir DIR`; `--demucs-repo DIR`; `--device cpu|mps`.
+`--fingering key|all|none`; `--out DIR`; `--cache-dir DIR`; `--demucs-repo DIR`;
+`--device cpu|mps`.
+
+Fingering is `key` by default: numbers on the few notes where the hand has to be
+told how to get there (first note, after a rest, a leap, a crossing, a grip
+change), and nothing else. `all` numbers every note, for reading a piece one note
+at a time; `none` leaves the staff unmarked. The numbers come from a cost model
+adapted from [performer](https://github.com/michaeljclark/performer) (MIT); they
+are a suggestion, not a teacher's marking.
 
 Output per tier in `out/<name>/`: `.musicxml`, `.mid`, `.jianpu.txt`, `-p01.png`
-staff pages, `-roll.png` piano roll, and `report.json`.
+staff pages, `-roll.png` piano roll, and `report.json`. The MusicXML and the staff
+pages carry the finger numbers; `report.json` records how many were marked.
 
 ## Use it from DeepSeek Harness
 
@@ -73,8 +82,14 @@ Install the bundle, then call the host tool `piano_score`:
 - `source` is an audio file URL, a local path, or a page URL (the plugin tries to
   find the audio on it and hands over to Envoy when the page needs a browser).
 - `seconds` for a preview of long audio; `jianpuChars` caps the numbered
-  notation returned in chat; `transpose` shifts the written key.
+  notation returned in chat; `transpose` shifts the written key; `fingering` is
+  `key` (default), `all` or `none`.
 - Outputs land in a new directory under `out/`; the absolute paths come back.
+
+There is also a small local service: `PYTHONPATH=src .venv/bin/python -m
+pianochart.serve --port 8797` answers `POST /api/score` with `{"source", "tier",
+"fingering", "seconds"}`, returns a job id, and reports the artifacts when the job
+is done. It exists so a web page can hand a link to a runner on this machine.
 
 The same pipeline is also served over MCP as `piano_score` on stdio, so any MCP
 client can use it. The bundle starts it from `lib/pianochart_mcp.py`; point it at

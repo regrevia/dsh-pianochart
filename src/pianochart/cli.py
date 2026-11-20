@@ -16,6 +16,7 @@ from pathlib import Path
 import numpy as np
 
 from . import arrange, audio, eval as peval, notation, transcribe
+from . import fingering
 
 log = logging.getLogger("pianochart")
 
@@ -95,6 +96,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--transpose", type=int, default=0)
     p.add_argument("--stem-name", default=None)
     p.add_argument("--no-staff", action="store_true", help="skip staff rendering (fast)")
+    p.add_argument("--fingering", default="key", choices=["key", "all", "none"],
+                   help="finger numbers in the staff score: key = only where the hand "
+                        "changes position (default), all = every note, none = off")
     p.add_argument("--notes-cache", default=None,
                    help="reuse a pickled analysis ({mel,bass,chords,info,mix}) instead of "
                         "re-running transcription; stems are still not separated")
@@ -159,6 +163,8 @@ def main(argv: list[str] | None = None) -> int:
         arr = arrange.build_arrangement(melody, bass_notes, chords, info, name,
                                         presets=presets, transpose=args.transpose,
                                         ref_audio=(mix, 44100))
+        if args.fingering != "none":
+            arr.meta["fingering"] = fingering.annotate(arr, args.fingering)
         arrangements[name] = arr
         stem = args.stem_name or src.stem
         paths = notation.write_score(arr, out_dir, stem=stem)
@@ -176,6 +182,8 @@ def main(argv: list[str] | None = None) -> int:
                 log.warning("staff rendering skipped: %s", exc)
         entry = {k: _report_value(v, out_dir) for k, v in paths.items()}
         entry["stats"] = arr.stats()
+        if "fingering" in arr.meta:
+            entry["fingering"] = arr.meta["fingering"]
         try:
             import librosa
             ref = librosa.resample(mix, orig_sr=44100, target_sr=peval.SR)

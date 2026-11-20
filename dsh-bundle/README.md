@@ -85,6 +85,7 @@ page with Envoy first and pass the audio URL (or the saved file) as `source`.
 | `source` | Required. Link or path. |
 | `tier` | `easy` (default), `medium`, `hard`. Same rhythm, range and density in all three; they differ in key signature, so `easy` has the fewest black keys and is the tier to pick when the point is to play it. |
 | `seconds` | Transcribe only the first N seconds. Separation costs roughly a tenth of the audio length on CPU, so this is how to preview cheaply. |
+| `fingering` | `key` (default), `all`, `none`. `key` marks only the notes where the hand has to be told how to get there; `all` numbers every note; `none` leaves the staff unmarked. The numbers come from a cost model adapted from [performer](https://github.com/michaeljclark/performer) (MIT) — a suggestion, not a teacher's marking. |
 | `transpose` | Shift the whole arrangement by semitones. |
 | `out` | Output directory. Defaults to `out/link-<timestamp>` under the pipeline checkout. |
 | `jianpuChars` | How much numbered notation to return inline (default 1800). The file holds the whole thing. |

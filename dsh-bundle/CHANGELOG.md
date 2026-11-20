@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.4
+
+- Fingering. The score carries finger numbers, `key` by default: the few notes
+  where the hand has to be told how to get there. `all` numbers every note;
+  `none` leaves the staff unmarked. New `fingering` argument on the tool.
+- `serve.py`, a small local HTTP runner (`POST /api/score`) so a web page can
+  hand a link to this machine. It takes the same `fingering` argument.
+- Fingering counts are recorded in `report.json` and returned by the tool.
+
 ## 0.1.2
 
 - Peer range for `@deepseek-ai/dsh-mcp-client` covers both prerelease lines

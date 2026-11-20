@@ -34,6 +34,7 @@ MAX_JOBS = 40
 
 # what the page shows while it waits
 STAGES = {"queued": 0, "fetching": 1, "transcribing": 2, "ready": 3}
+FINGERING_MODES = {"key", "all", "none"}
 
 # one heavy job at a time
 _lane = threading.Semaphore(1)
@@ -126,7 +127,8 @@ def fetch_source(source: str, workdir: Path) -> Path:
 
 # ---------------------------------------------------------------- jobs
 
-def _run_job(job_id: str, source: str, tier: str, seconds: float | None) -> None:
+def _run_job(job_id: str, source: str, tier: str, seconds: float | None,
+             fingering: str = "key") -> None:
     job = _jobs[job_id]
     work = Path(job["work"])
     try:
@@ -140,19 +142,21 @@ def _run_job(job_id: str, source: str, tier: str, seconds: float | None) -> None
                    "--cache-dir", str(work / "cache")]
             if seconds:
                 cmd += ["--seconds", str(seconds)]
+            if fingering != "none":
+                cmd += ["--fingering", fingering]
             env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
             proc = subprocess.run(cmd, cwd=str(REPO), capture_output=True,
                                   text=True, timeout=JOB_TIMEOUT, env=env)
             if proc.returncode != 0:
                 raise RuntimeError((proc.stderr or proc.stdout or "pipeline failed").strip()[-600:])
-            job["result"] = _collect(out, tier)
+            job["result"] = _collect(out, tier, fingering)
             job["status"] = "ready"
     except Exception as exc:  # surfaced to the page, not swallowed
         job["status"] = "error"
         job["error"] = str(exc)[:600]
 
 
-def _collect(out: Path, tier: str) -> dict:
+def _collect(out: Path, tier: str, fingering: str = "key") -> dict:
     files = []
     for p in sorted(out.rglob("*")):
         if p.is_file() and p.suffix.lower() in {".png", ".musicxml", ".mid", ".txt", ".svg"}:
@@ -166,7 +170,15 @@ def _collect(out: Path, tier: str) -> dict:
             except Exception:
                 pass
             break
-    return {"tier": tier, "files": files, "jianpu": jianpu}
+    fing = {}
+    try:
+        rep = json.loads((out / "report.json").read_text())
+        for name, entry in rep.items():
+            if isinstance(entry, dict) and entry.get("fingering"):
+                fing[name] = entry["fingering"]
+    except Exception:
+        pass
+    return {"tier": tier, "files": files, "jianpu": jianpu, "fingering": fing}
 
 
 # ---------------------------------------------------------------- page
@@ -263,6 +275,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(400, {"error": f"unknown tier: {tier}"})
                 return
             seconds = payload.get("seconds")
+            fingering = payload.get("fingering") or "key"
+            if fingering not in FINGERING_MODES:
+                self._json(400, {"error": f"unknown fingering: {fingering}"})
+                return
         except Exception as exc:
             self._json(400, {"error": f"bad request: {exc}"})
             return
@@ -275,7 +291,9 @@ class Handler(BaseHTTPRequestHandler):
             job_id = uuid.uuid4().hex[:12]
             _jobs[job_id] = {"status": "queued", "work": tempfile.mkdtemp(prefix=f"pc-{job_id}-"),
                              "created": time.time()}
-        threading.Thread(target=_run_job, args=(job_id, source, tier, seconds), daemon=True).start()
+        threading.Thread(target=_run_job,
+                             args=(job_id, source, tier, seconds, fingering),
+                             daemon=True).start()
         self._json(200, {"id": job_id})
 
 

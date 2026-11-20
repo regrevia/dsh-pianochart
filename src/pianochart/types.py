@@ -26,6 +26,7 @@ class NoteEvent:
     velocity: int = 80   # 1..127
     stem: str = "other"  # which separated stem it came from
     confidence: float = 1.0
+    finger: int = 0      # 1..5 for a printed fingering, 0 for none
 
     @property
     def end(self) -> float:
@@ -39,6 +40,7 @@ class NoteEvent:
             velocity=self.velocity,
             stem=self.stem,
             confidence=self.confidence,
+            finger=self.finger,
         )
 
 

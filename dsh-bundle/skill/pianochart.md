@@ -19,6 +19,16 @@ key still sounds. Say which key it was written in when you hand over the images;
 the result names it. Do not promise an easier rhythm or fewer notes for `easy`;
 that is not what differs.
 
+## Fingering
+
+The score carries finger numbers, `key` by default: only the few places where the
+hand has to be told how to get there — the first note, after a rest, a leap, a
+crossing, a change of grip. Leave it alone. Reach for `all` only if the person
+asks for a number on every note (a beginner reading the score note by note), and
+`none` if they want the staff clean. The numbers are a suggestion from a cost
+model, not a teacher's marking: say so if the person is learning the piece, and
+let them change one rather than defend it.
+
 ## Order of operations
 
 1. Long audio: call once with `seconds` (60–120) first. Separation costs about a
