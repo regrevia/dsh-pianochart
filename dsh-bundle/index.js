@@ -129,6 +129,14 @@ const PARAMETERS = {
         'Only transcribe the first N seconds. Use it to preview a long track cheaply: the '
         + 'separation stage costs about a tenth of the audio length on CPU.',
     },
+    fingering: {
+      type: 'string',
+      enum: ['key', 'all', 'none'],
+      description:
+        'Which notes carry a finger number. key marks only the few places where the hand has to '
+        + 'be told how to get there (the default); all numbers every note; none leaves the staff '
+        + 'unmarked.',
+    },
     transpose: {
       type: 'integer',
       description: 'Shift the whole arrangement by this many semitones. Omit to keep the written key.',
@@ -217,6 +225,15 @@ function format(result) {
   }
   lines.push(`右手 ${result.right_notes} 音 · 左手 ${result.left_notes} 音 · ${result.duration}s`
     + (result.audio_seconds ? ` · 音频 ${Math.round(result.audio_seconds)}s` : ''))
+  const fing = result.fingering
+  if (fing && fing.mode === 'none') {
+    lines.push('指法 未标注')
+  } else if (fing && fing.mode) {
+    const marked = (fing.right || 0) + (fing.left || 0)
+    const total = (fing.right_total || 0) + (fing.left_total || 0)
+    lines.push(`指法 ${marked} 处${total ? ` / 共 ${total} 个音` : ''}`
+      + (fing.mode === 'key' ? '（只标关键处）' : ''))
+  }
   if (result.staff_pages?.length) lines.push(`五线谱 ${result.staff_pages.length} 页：${result.staff_pages[0]}`)
   if (result.musicxml) lines.push(`MusicXML ${result.musicxml}`)
   if (result.midi) lines.push(`MIDI ${result.midi}`)
@@ -256,6 +273,17 @@ export function apply(ctx, config = {}) {
           tier: { type: 'string' },
           key_signature: { type: 'string' },
           transpose: { type: 'integer' },
+          fingering: {
+            type: 'object',
+            properties: {
+              mode: { type: 'string' },
+              right: { type: 'integer' },
+              left: { type: 'integer' },
+              right_total: { type: 'integer' },
+              left_total: { type: 'integer' },
+            },
+            additionalProperties: false,
+          },
           duration: { type: 'number' },
           right_notes: { type: 'integer' },
           left_notes: { type: 'integer' },
@@ -314,6 +342,7 @@ export function apply(ctx, config = {}) {
       ]
       if (typeof args.seconds === 'number' && args.seconds > 0) argv.push('--seconds', String(args.seconds))
       if (Number.isInteger(args.transpose) && args.transpose !== 0) argv.push('--transpose', String(args.transpose))
+      if (args.fingering) argv.push('--fingering', String(args.fingering))
 
       const result = await runBridge({ python, repo, argv })
 
@@ -339,6 +368,7 @@ export function apply(ctx, config = {}) {
         duration: result.duration ?? undefined,
         right_notes: result.right_notes ?? undefined,
         left_notes: result.left_notes ?? undefined,
+        fingering: result.fingering && result.fingering.mode ? result.fingering : undefined,
         similarity: result.similarity?.chroma_cos_mean !== undefined
           ? {
               chroma_cos_mean: result.similarity.chroma_cos_mean,

@@ -184,6 +184,12 @@ def main(argv: list[str] | None = None) -> int:
         entry["stats"] = arr.stats()
         if "fingering" in arr.meta:
             entry["fingering"] = arr.meta["fingering"]
+            try:
+                entry["fingering_check"] = fingering.verify_export(
+                    arr, Path(paths["musicxml"]).read_text(encoding="utf-8"),
+                    arr.meta["fingering"].get("mode", args.fingering))
+            except Exception as exc:  # never fail a run over the check itself
+                log.warning("fingering check skipped: %s", exc)
         try:
             import librosa
             ref = librosa.resample(mix, orig_sr=44100, target_sr=peval.SR)

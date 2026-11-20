@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.5
+
+- The plugin layer passes `fingering` through. 0.1.4 accepted the argument in
+  the MCP bridge and in the tool schema but the bundled tool never forwarded
+  it, so every call from the plugin was scored with the default.
+- The result reports the fingerings, and the rendered summary says how many
+  were marked out of how many notes.
+- The cost model charges a hand for playing away from its own end of the
+  keyboard, so the same motif fingers differently low and high.
+- `report.json` carries `fingering_check`: the number of finger numbers in the
+  arrangement, the number in the staff file, and whether every marked chord is
+  monotone in its hand's direction. A run that disagrees says so.
+
 ## 0.1.4
 
 - Fingering. The score carries finger numbers, `key` by default: the few notes

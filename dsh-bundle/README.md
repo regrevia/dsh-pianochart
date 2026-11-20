@@ -96,6 +96,11 @@ Bounded by design: a few summary lines, the paths to every artifact, and the
 first `jianpuChars` characters of the numbered notation. The score directory
 holds the rest, including one PNG per staff page and a piano-roll image.
 
+`report.json` carries a `fingering_check` block: how many finger numbers the
+arrangement holds, how many reached the staff file, and whether every marked
+chord is monotone in its hand's direction. If those disagree the run says so
+rather than shipping a score whose digits do not match its notes.
+
 Similarity is a chroma cosine against the source audio: `chroma_cos_mean` over
 the whole track and `chroma_cos_p10` for the worst tenth. It measures tonal
 content, not whether the part is playable; the tier is what controls difficulty.

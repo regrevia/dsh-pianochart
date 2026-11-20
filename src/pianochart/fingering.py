@@ -22,6 +22,7 @@ Fingering is an annotation. It never changes pitch, timing or duration.
 
 from __future__ import annotations
 
+import re
 from itertools import combinations
 
 from .types import NoteEvent
@@ -57,6 +58,8 @@ _MOVE_RAW: tuple[float, ...] = (
 _BLACK = frozenset({1, 3, 6, 8, 10})
 MAX_FINGERS = 5
 _MOVE_CUTOFF = 7.5
+# Middle C: below it the right hand reaches awkwardly, above it the left.
+_REGISTER_CENTRE = 60
 
 
 def _move(semis: int) -> float:
@@ -235,7 +238,7 @@ def assign(events: list[NoteEvent], hand: str = "right") -> dict[tuple[int, int]
             for j, prev in enumerate(shapes[i - 1]):
                 if score[i - 1][j] == inf:
                     continue
-                total = score[i - 1][j] + _transition(prev_p, prev, cur_p, cur)
+                total = score[i - 1][j] + _transition(prev_p, prev, cur_p, cur, hand)
                 if total < best:
                     best, best_j = total, j
             score[i][k] = best
@@ -256,7 +259,8 @@ def assign(events: list[NoteEvent], hand: str = "right") -> dict[tuple[int, int]
 
 
 def _transition(prev_p: list[int], prev_f: tuple[int, ...],
-                cur_p: list[int], cur_f: tuple[int, ...]) -> float:
+                cur_p: list[int], cur_f: tuple[int, ...],
+                hand: str = "right") -> float:
     """Cost of one hand moving from one strike to the next, in model space."""
     total = 0.0
     # Walk the current notes against the previous ones by rank: the low note of
@@ -275,6 +279,14 @@ def _transition(prev_p: list[int], prev_f: tuple[int, ...],
         gap = (cur_p[-1] - cur_p[0]) - outer
         if gap > 0:
             total += gap * 2.0
+    # Playing low on the keyboard is harder for the right hand and easy for the
+    # left, and the other way round at the top. Without this a tune written at
+    # the centre of the keyboard fingers the same either way.
+    # Pitches reach here in model space, where the left hand's are mirrored.
+    if hand == "right":
+        total += max(0, _REGISTER_CENTRE - min(cur_p))
+    else:
+        total += max(0, -min(cur_p) - _REGISTER_CENTRE)
     return total
 
 
@@ -351,18 +363,6 @@ def _regrips(prev: tuple[int, ...], cur: tuple[int, ...]) -> bool:
     return tuple(f - prev[0] for f in prev) != tuple(f - cur[0] for f in cur)
 
 
-def _must_read(prev: tuple[int, ...], cur: tuple[int, ...], pitch: int,
-               prev_pitch: int | None, hand: str) -> bool:
-    """A stepwise run keeps its finger offsets; anything else must be printed."""
-    if prev_pitch is None:
-        return True
-    step = pitch - prev_pitch
-    # Same position walking: offsets stay put, so no number is needed.
-    if abs(step) <= 2 and abs(cur[0] - prev[0]) <= 1 and cur[0] != 1 and prev[0] != 1:
-        return False
-    return True
-
-
 def annotate(arr, mode: str = "key") -> dict:
     """Attach finger numbers to an arrangement in place. Returns a report."""
     report = {"mode": mode, "right": 0, "left": 0,
@@ -384,3 +384,44 @@ def annotate(arr, mode: str = "key") -> dict:
             marked += 1 if f else 0
         report[hand] = marked
     return report
+
+
+def verify_export(arr, musicxml_text: str, mode: str = "key") -> dict:
+    """Compare the finger numbers in the staff file with the arrangement.
+
+    Re-runnable evidence: walks the strikes in time order, reads the number
+    carried by each note, and checks that the staff file agrees with it and
+    that every chord is monotone in its hand's direction.
+    """
+    idx: dict[tuple[float, int], int] = {}
+    for events in (arr.right, arr.left):
+        for e in events:
+            idx[(round(e.start, 2), e.pitch)] = getattr(e, "finger", 0)
+
+    marked_strikes = 0
+    non_monotone = 0
+    carried = 0
+    for hand, events in (("right", arr.right), ("left", arr.left)):
+        for start, pitches in _strikes(events):
+            start = round(start, 2)
+            fingers = [idx.get((start, p), 0) for p in pitches]
+            fingers = [f for f in fingers if f]
+            if not fingers:
+                continue
+            marked_strikes += 1
+            carried += len(fingers)
+            if len(fingers) < 2:
+                continue
+            ordered = sorted(fingers, reverse=(hand == "left"))
+            if fingers != ordered:
+                non_monotone += 1
+
+    in_file = len(re.findall(r"<fingering[^>]*>(\d)</fingering>", musicxml_text))
+    return {
+        "mode": mode,
+        "in_arrangement": carried,
+        "in_staff_file": in_file,
+        "marked_strikes": marked_strikes,
+        "non_monotone_strikes": non_monotone,
+        "agrees": in_file == carried and non_monotone == 0,
+    }
