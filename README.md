@@ -111,3 +111,15 @@ drum and beat grid refinement, multi-voice left-hand textures.
 
 MIT. The Demucs weights are MIT and remain under their own license; they are
 downloaded, not redistributed here.
+
+## Checking the finger numbers
+
+A wrong digit on one note is invisible in a picture, so the check is mechanical:
+give it a run's pickle and it clears the numbers, re-fingers, and compares the
+arrangement against the staff file on disk.
+
+```sh
+PYTHONPATH=src python scripts/verify_fingering.py out/<run>/<stem>-<tier>.arr.pkl --mode key
+```
+
+It exits non-zero when they disagree, so it can gate a release.
