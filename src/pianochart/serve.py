@@ -170,14 +170,20 @@ def _collect(out: Path, tier: str, fingering: str = "key") -> dict:
                 pass
             break
     fing = {}
+    checks = {}
     try:
         rep = json.loads((out / "report.json").read_text())
         for name, entry in rep.items():
             if isinstance(entry, dict) and entry.get("fingering"):
                 fing[name] = entry["fingering"]
+            if isinstance(entry, dict) and entry.get("fingering_check"):
+                checks[name] = entry["fingering_check"]
     except Exception:
         pass
-    return {"tier": tier, "files": files, "jianpu": jianpu, "fingering": fing}
+    # The counts alone say how many numbers were written; the check says whether
+    # the staff file actually carries them and whether they are in order.
+    return {"tier": tier, "files": files, "jianpu": jianpu,
+            "fingering": fing, "fingering_check": checks}
 
 
 # ---------------------------------------------------------------- page
