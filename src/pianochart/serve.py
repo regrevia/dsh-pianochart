@@ -142,8 +142,7 @@ def _run_job(job_id: str, source: str, tier: str, seconds: float | None,
                    "--cache-dir", str(work / "cache")]
             if seconds:
                 cmd += ["--seconds", str(seconds)]
-            if fingering != "none":
-                cmd += ["--fingering", fingering]
+            cmd += ["--fingering", fingering]
             env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
             proc = subprocess.run(cmd, cwd=str(REPO), capture_output=True,
                                   text=True, timeout=JOB_TIMEOUT, env=env)
