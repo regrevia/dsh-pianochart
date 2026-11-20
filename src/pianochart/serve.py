@@ -103,7 +103,9 @@ def _curl(url: str, dest: Path, tries: int = 3) -> Path:
 def fetch_source(source: str, workdir: Path) -> Path:
     """Turn a link into a local file, or explain what it is instead."""
     if not re.match(r"^https?://", source, re.I):
-        local = Path(source).expanduser()
+        # A path pasted from a file manager can arrive as file:///a/b.m4a.
+        bare = re.sub(r"^file://", "", source, flags=re.I)
+        local = Path(unquote(bare)).expanduser()
         if not local.exists():
             raise SourceError(f"no such file: {local}")
         return local
