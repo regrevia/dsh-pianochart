@@ -247,6 +247,7 @@ def collect(report: dict, tier: str, out_dir: str) -> dict:
         "left_notes": (block.get("stats") or {}).get("left_notes"),
         "similarity": block.get("eval") or {},
         "fingering": block.get("fingering") or {},
+        "fingering_check": block.get("fingering_check") or {},
         "staff_pages": pages,
         "jianpu_path": jianpu_path,
         "jianpu": jianpu_text,

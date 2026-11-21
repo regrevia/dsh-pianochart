@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.6
+
+- The result says whether the numbers actually reached the score. `fingering`
+  has always reported how many places were chosen, which cannot tell a page
+  full of fingerings from one where the export silently dropped them. A new
+  `fingering_check` carries the independent count read back out of the
+  written MusicXML, so `in_staff_file` equal to `in_arrangement` with
+  `non_monotone_strikes` at zero is a fact rather than an assumption.
+- A local file path is accepted as it arrives from a file manager. A leading
+  `file://` is stripped before the path is resolved instead of being taken
+  as part of the filename.
+
 ## 0.1.5
 
 - The plugin layer passes `fingering` through. 0.1.4 accepted the argument in

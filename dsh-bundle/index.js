@@ -233,6 +233,12 @@ function format(result) {
     const total = (fing.right_total || 0) + (fing.left_total || 0)
     lines.push(`指法 ${marked} 处${total ? ` / 共 ${total} 个音` : ''}`
       + (fing.mode === 'key' ? '（只标关键处）' : ''))
+    const chk = result.fingering_check
+    if (chk && typeof chk.in_staff_file === 'number') {
+      lines.push(chk.agrees
+        ? `谱面已写入 ${chk.in_staff_file} 个，左右手顺序都对`
+        : `谱面只写入 ${chk.in_staff_file} 个，编配里是 ${chk.in_arrangement} 个，对不上`)
+    }
   }
   if (result.staff_pages?.length) lines.push(`五线谱 ${result.staff_pages.length} 页：${result.staff_pages[0]}`)
   if (result.musicxml) lines.push(`MusicXML ${result.musicxml}`)
@@ -281,6 +287,18 @@ export function apply(ctx, config = {}) {
               left: { type: 'integer' },
               right_total: { type: 'integer' },
               left_total: { type: 'integer' },
+            },
+            additionalProperties: false,
+          },
+          fingering_check: {
+            type: 'object',
+            properties: {
+              mode: { type: 'string' },
+              in_arrangement: { type: 'integer' },
+              in_staff_file: { type: 'integer' },
+              marked_strikes: { type: 'integer' },
+              non_monotone_strikes: { type: 'integer' },
+              agrees: { type: 'boolean' },
             },
             additionalProperties: false,
           },
@@ -369,6 +387,9 @@ export function apply(ctx, config = {}) {
         right_notes: result.right_notes ?? undefined,
         left_notes: result.left_notes ?? undefined,
         fingering: result.fingering && result.fingering.mode ? result.fingering : undefined,
+        fingering_check: result.fingering_check && result.fingering_check.mode
+          ? result.fingering_check
+          : undefined,
         similarity: result.similarity?.chroma_cos_mean !== undefined
           ? {
               chroma_cos_mean: result.similarity.chroma_cos_mean,

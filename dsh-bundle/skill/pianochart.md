@@ -29,6 +29,13 @@ asks for a number on every note (a beginner reading the score note by note), and
 model, not a teacher's marking: say so if the person is learning the piece, and
 let them change one rather than defend it.
 
+`fingering` counts where a number was chosen; `fingering_check` is read back out
+of the written MusicXML afterwards. Quote the second when someone asks whether
+the score really has them: `in_staff_file` equal to `in_arrangement` and
+`non_monotone_strikes` at 0 means every chosen number survived the export and
+each hand's numbers run the right way. If the two counts differ, the export
+lost numbers and that is the thing to report.
+
 ## Order of operations
 
 1. Long audio: call once with `seconds` (60–120) first. Separation costs about a
